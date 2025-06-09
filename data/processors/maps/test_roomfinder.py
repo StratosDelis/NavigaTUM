@@ -5,7 +5,7 @@ import pytest
 from external.models import roomfinder
 from processors.maps.models import Coordinate
 from processors.maps.roomfinder import _calc_xy_of_coords_on_map
-
+from processors.maps.roomfinder import _entry_is_not_on_map
 
 def default_map(rotate: int = 0) -> roomfinder.Map:
     """Create a basic map"""
@@ -67,3 +67,19 @@ def test_coords_to_xy_translation_rotation(item: ExpectedCoordinate) -> None:
     assert (
         _calc_xy_of_coords_on_map(item.coordinate, item.map.latlonbox, item.map.width, item.map.height) == item.expected
     )
+
+@pytest.mark.parametrize(
+    "coords, expected",
+    [
+        (Coordinate(lon=0, lat=0), False),
+        (Coordinate(lon=50, lat=50), False),
+        (Coordinate(lon=-150, lat=-150), True),
+        (Coordinate(lon=-400, lat=0), True),
+    ],
+)
+def test_entry_is_not_on_map(coords: Coordinate, expected: bool) -> None:
+    """Test if _entry_is_not_on_map identifies coordinates outside the map boundaries."""
+    assign_map = default_map()
+    map_assignment_data = {assign_map.id: assign_map}
+    result = _entry_is_not_on_map(coords, assign_map.id, assign_map.width, assign_map.height, map_assignment_data)
+    assert result == expected
